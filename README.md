@@ -138,6 +138,6 @@ proyecto/
 
 ## 8. Notas
 
-- Según el requerimiento, el estudiante entra **sin contraseña** (solo correo o número de registro). Es simple para clase, pero cualquiera que conozca un número podría marcar por otro. Si se necesita más seguridad, se puede agregar un PIN.
+- Según el requerimiento, el estudiante entra **sin contraseña** (solo correo o número de registro).
 - Las sesiones se guardan en memoria: al reiniciar el servidor todos deben volver a ingresar.
 - Los horarios son informativos; la marca se habilita todo el día de clase (zona horaria configurable en `.env`).
