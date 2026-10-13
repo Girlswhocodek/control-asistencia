@@ -1,0 +1,27 @@
+{
+  "name": "control-asistencia",
+  "version": "1.0.0",
+  "description": "Sistema web de registro y control de asistencia (admin y estudiantes, importación desde Excel)",
+  "main": "src/server.js",
+  "private": true,
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/server.js",
+    "dev": "node --disable-warning=ExperimentalWarning --watch src/server.js",
+    "ejemplos": "node scripts/generar-ejemplos.js"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^18.0.7",
+    "exceljs": "^4.4.0",
+    "express": "^5.3.0",
+    "express-session": "^1.19.0",
+    "multer": "^2.4.0"
+  },
+  "overrides": {
+    "uuid": "^11.1.1"
+  }
+}

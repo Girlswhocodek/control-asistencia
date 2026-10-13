@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Panel de administración</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <span class="title">Control de Asistencia · Admin</span>
+    <span class="spacer"></span>
+    <span class="who" id="who"></span>
+    <button type="button" onclick="cerrarSesion()">Cerrar sesión</button>
+  </header>
+
+  <main class="container">
+    <div class="row" style="align-items:center;margin-bottom:14px">
+      <div>
+        <h1 id="modulo-nombre">Panel de administración</h1>
+        <p class="muted" id="modulo-info"></p>
+      </div>
+      <div class="shrink"><a class="btn" id="btn-exportar" href="/api/admin/exportar">Exportar a Excel</a></div>
+    </div>
+
+    <div id="sin-modulo" class="alert warn hidden">
+      No hay un módulo activo. Ve a <b>Nuevo módulo</b> y sube los Excel de estudiantes y fechas para empezar.
+    </div>
+
+    <section class="stats" style="margin-bottom:18px">
+      <div class="stat"><div class="n" id="s-est">0</div><div class="l">Estudiantes</div></div>
+      <div class="stat"><div class="n" id="s-fec">0</div><div class="l">Fechas de clase</div></div>
+      <div class="stat ok"><div class="n" id="s-pres">0</div><div class="l">Presentes</div></div>
+      <div class="stat bad"><div class="n" id="s-falt">0</div><div class="l">Faltas</div></div>
+    </section>
+
+    <nav class="tabs">
+      <button type="button" data-tab="asistencias" class="active">Asistencias</button>
+      <button type="button" data-tab="estudiantes">Estudiantes</button>
+      <button type="button" data-tab="actividades">Historial de actividades</button>
+      <button type="button" data-tab="modulo">Nuevo módulo</button>
+    </nav>
+
+    <!-- RF-07 / RF-08 -->
+    <section id="tab-asistencias" class="card">
+      <div class="row">
+        <div><label for="f-fecha">Fecha de clase</label><select id="f-fecha"><option value="">Todas</option></select></div>
+        <div><label for="f-est">Estudiante</label><select id="f-est"><option value="">Todos</option></select></div>
+      </div>
+      <p class="small muted" id="a-totales" style="margin:14px 0 6px"></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Fecha</th><th>Nro. registro</th><th>Estudiante</th><th>Estado</th><th>Hora de marca</th><th>Cambiar a</th></tr></thead>
+          <tbody id="a-tabla"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- RF-06 -->
+    <section id="tab-estudiantes" class="card hidden">
+      <label for="buscar">Buscar por nombre o número de registro</label>
+      <input type="search" id="buscar" placeholder="Escribe para buscar…">
+      <div class="table-wrap" style="margin-top:12px">
+        <table>
+          <thead><tr><th>Nro. registro</th><th>Nombre completo</th><th>Correo</th><th></th></tr></thead>
+          <tbody id="e-tabla"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- RF-10 -->
+    <section id="tab-actividades" class="card hidden">
+      <div class="row">
+        <div><label for="h-est">Estudiante</label><select id="h-est"><option value="">Todos</option></select></div>
+        <div><label for="h-fecha">Fecha</label><input type="date" id="h-fecha"></div>
+        <div class="shrink"><button type="button" id="h-limpiar">Limpiar filtros</button></div>
+      </div>
+      <div class="table-wrap" style="margin-top:12px">
+        <table>
+          <thead><tr><th>Fecha y hora</th><th>Usuario</th><th>Rol</th><th>Acción</th><th>Detalle</th></tr></thead>
+          <tbody id="h-tabla"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- RF-11, RF-12, RF-13, RF-16 -->
+    <section id="tab-modulo" class="card hidden">
+      <h2>Activar un nuevo módulo</h2>
+      <p class="muted">Sube los dos archivos Excel. Primero verás una vista previa; nada se guarda hasta que confirmes.
+        Al activar, el módulo actual deja de estar activo pero sus datos se conservan en la base de datos.</p>
+      <form id="form-subir">
+        <div class="row">
+          <div><label for="x-est">Excel de estudiantes</label><input type="file" id="x-est" accept=".xlsx" required>
+            <div class="small muted">Columnas: Número de registro · Nombre completo · Correo electrónico</div></div>
+          <div><label for="x-fec">Excel de fechas de clase</label><input type="file" id="x-fec" accept=".xlsx" required>
+            <div class="small muted">Columnas: Fecha · Hora inicio · Hora fin</div></div>
+        </div>
+        <div style="margin-top:16px"><button class="primary" type="submit">Ver vista previa</button></div>
+      </form>
+
+      <div id="vp" class="hidden">
+        <div id="vp-errores"></div>
+        <div class="preview-grid">
+          <div><h3 id="vp-est-t">Estudiantes</h3><div class="table-wrap"><table>
+            <thead><tr><th>Fila</th><th>Nro.</th><th>Nombre</th><th>Correo</th></tr></thead><tbody id="vp-est"></tbody></table></div></div>
+          <div><h3 id="vp-fec-t">Fechas</h3><div class="table-wrap"><table>
+            <thead><tr><th>Fila</th><th>Fecha</th><th>Inicio</th><th>Fin</th></tr></thead><tbody id="vp-fec"></tbody></table></div></div>
+        </div>
+        <div id="vp-activar" class="hidden" style="margin-top:16px">
+          <label for="nombre-modulo">Nombre del módulo</label>
+          <input type="text" id="nombre-modulo" placeholder="ej. Módulo 3 · Redes y Seguridad">
+          <div style="margin-top:14px"><button class="danger" type="button" id="btn-activar">Activar nuevo módulo</button></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/js/comun.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>

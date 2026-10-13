@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mi asistencia</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <span class="title">Control de Asistencia</span>
+    <span class="spacer"></span>
+    <span class="who" id="who"></span>
+    <button type="button" onclick="cerrarSesion()">Cerrar sesión</button>
+  </header>
+
+  <main class="container">
+    <h1 id="saludo">Mi asistencia</h1>
+    <p class="muted" id="modulo"></p>
+
+    <section class="card">
+      <div class="marcar">
+        <div class="info">
+          <h2 id="hoy-titulo">Hoy</h2>
+          <div id="hoy-texto" class="muted"></div>
+        </div>
+        <button id="btn-marcar" class="primary" type="button" disabled>Marcar asistencia</button>
+      </div>
+    </section>
+
+    <section class="stats" style="margin-bottom:18px">
+      <div class="stat ok"><div class="n" id="t-pres">0</div><div class="l">Asistencias</div></div>
+      <div class="stat bad"><div class="n" id="t-falt">0</div><div class="l">Faltas</div></div>
+      <div class="stat"><div class="n" id="t-rest">0</div><div class="l">Clases por venir</div></div>
+      <div class="stat"><div class="n" id="t-pct">–</div><div class="l">% de asistencia</div></div>
+    </section>
+
+    <section class="card">
+      <h2>Historial del módulo</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Fecha</th><th>Horario</th><th>Estado</th><th>Hora de marca</th></tr></thead>
+          <tbody id="tabla"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="/js/comun.js"></script>
+  <script>
+    const btn = document.getElementById('btn-marcar');
+
+    async function cargar() {
+      let d;
+      try { d = await api('/api/estudiante/historial'); }
+      catch (e) { if (e.status === 401) { alert(e.message); location.href = '/'; } else toast(e.message, 'error'); return; }
+
+      document.getElementById('who').textContent = `${d.estudiante.nombre} · ${d.estudiante.nro_registro}`;
+      document.getElementById('saludo').textContent = `Hola, ${d.estudiante.nombre.split(' ')[0]}`;
+      document.getElementById('modulo').textContent = `Módulo: ${d.modulo.nombre}`;
+
+      // Tarjeta del día
+      document.getElementById('hoy-titulo').textContent = fechaLarga(d.hoy);
+      const txt = document.getElementById('hoy-texto');
+      const c = d.claseHoy;
+      if (!c) {
+        txt.textContent = 'Hoy no hay clase programada. El botón se habilita solo en días de clase.';
+      } else if (c.estado === 'PENDIENTE') {
+        txt.innerHTML = `Clase de ${c.hora_inicio} a ${c.hora_fin}. Aún no registraste tu asistencia.`;
+      } else if (c.estado === 'PRESENTE') {
+        txt.innerHTML = `${badge('PRESENTE')} Registrada${c.marcado_en ? ` a las ${horaDe(c.marcado_en)}` : ' por el administrador'}.`;
+      } else {
+        txt.innerHTML = `${badge(c.estado)} El administrador registró este estado para hoy.`;
+      }
+      btn.disabled = !d.puedeMarcar;
+      btn.textContent = c?.estado === 'PRESENTE' ? 'Asistencia registrada ✓' : 'Marcar asistencia';
+
+      // Resumen
+      const r = d.resumen;
+      document.getElementById('t-pres').textContent = r.presentes;
+      document.getElementById('t-falt').textContent = r.faltas;
+      document.getElementById('t-rest').textContent = r.programadas + r.pendientes;
+      const cerradas = r.presentes + r.faltas;
+      document.getElementById('t-pct').textContent = cerradas ? `${Math.round(r.presentes * 100 / cerradas)}%` : '–';
+
+      // Tabla
+      document.getElementById('tabla').innerHTML = d.fechas.length ? d.fechas.map((f) => `
+        <tr class="${f.fecha === d.hoy ? 'today' : ''}">
+          <td>${esc(fechaLarga(f.fecha))}</td>
+          <td>${esc(f.hora_inicio)} – ${esc(f.hora_fin)}</td>
+          <td>${badge(f.estado)}</td>
+          <td>${f.marcado_en ? esc(horaDe(f.marcado_en)) : (f.origen === 'ADMIN' ? '<span class="muted small">Corregido por admin</span>' : '')}</td>
+        </tr>`).join('') : '<tr><td colspan="4" class="empty">No hay fechas de clase.</td></tr>';
+    }
+
+    btn.onclick = async () => {
+      btn.disabled = true;
+      try {
+        const r = await api('/api/estudiante/marcar', { method: 'POST' });
+        toast(`¡Listo! Asistencia registrada a las ${horaDe(r.marcado_en)}.`);
+      } catch (e) { toast(e.message, 'error'); }
+      cargar();
+    };
+
+    exigirSesion('estudiante').then(cargar);
+  </script>
+</body>
+</html>

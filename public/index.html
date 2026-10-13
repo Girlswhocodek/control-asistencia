@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Control de Asistencia · Ingreso</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <main class="login-wrap">
+    <div class="login-box">
+      <div class="brand">
+        <div class="logo">CA</div>
+        <h1>Control de Asistencia</h1>
+        <p class="muted">Ingresa para marcar o revisar asistencias</p>
+      </div>
+
+      <div class="card">
+        <div class="segmented" role="tablist">
+          <button type="button" id="tab-est" class="active">Estudiante</button>
+          <button type="button" id="tab-adm">Administrador</button>
+        </div>
+
+        <form id="form-est">
+          <label for="identificador">Correo o número de registro</label>
+          <input type="text" id="identificador" autocomplete="username" placeholder="ej. 1001 o juan@gmail.com" required>
+          <button class="primary" type="submit">Ingresar</button>
+        </form>
+
+        <form id="form-adm" class="hidden">
+          <label for="usuario">Usuario</label>
+          <input type="text" id="usuario" autocomplete="username" required>
+          <label for="password">Contraseña</label>
+          <input type="password" id="password" autocomplete="current-password" required>
+          <button class="primary" type="submit">Ingresar como administrador</button>
+        </form>
+
+        <div id="error" class="alert error hidden"></div>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/comun.js"></script>
+  <script>
+    const formEst = document.getElementById('form-est');
+    const formAdm = document.getElementById('form-adm');
+    const tabEst = document.getElementById('tab-est');
+    const tabAdm = document.getElementById('tab-adm');
+    const error = document.getElementById('error');
+
+    function mostrar(esAdmin) {
+      formEst.classList.toggle('hidden', esAdmin);
+      formAdm.classList.toggle('hidden', !esAdmin);
+      tabEst.classList.toggle('active', !esAdmin);
+      tabAdm.classList.toggle('active', esAdmin);
+      error.classList.add('hidden');
+    }
+    tabEst.onclick = () => mostrar(false);
+    tabAdm.onclick = () => mostrar(true);
+
+    function verError(e) { error.textContent = e.message; error.classList.remove('hidden'); }
+
+    formEst.onsubmit = async (ev) => {
+      ev.preventDefault();
+      try {
+        await api('/api/auth/estudiante', { method: 'POST', body: { identificador: document.getElementById('identificador').value } });
+        location.href = '/estudiante.html';
+      } catch (e) { verError(e); }
+    };
+
+    formAdm.onsubmit = async (ev) => {
+      ev.preventDefault();
+      try {
+        await api('/api/auth/admin', { method: 'POST', body: {
+          usuario: document.getElementById('usuario').value,
+          password: document.getElementById('password').value,
+        } });
+        location.href = '/admin.html';
+      } catch (e) { verError(e); }
+    };
+
+    // Si ya hay sesión abierta, ir directo a su pantalla
+    api('/api/auth/me').then(({ usuario }) => {
+      if (usuario?.rol === 'admin') location.href = '/admin.html';
+      else if (usuario?.rol === 'estudiante') location.href = '/estudiante.html';
+    }).catch(() => {});
+  </script>
+</body>
+</html>
